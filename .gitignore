@@ -1,0 +1,4 @@
+*.DS_STORE
+db-project/.mvn
+mvnw
+mvnw.cmd

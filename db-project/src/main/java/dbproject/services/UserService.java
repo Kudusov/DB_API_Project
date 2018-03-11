@@ -4,7 +4,6 @@ import dbproject.models.UserModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import static dbproject.rowmappers.RowMappers.readUser;
@@ -12,7 +11,6 @@ import static dbproject.rowmappers.RowMappers.readUser;
 @SuppressWarnings("unused")
 @Service
 public class UserService {
-    private ArrayList<UserModel> users = new ArrayList<>();
 
     private JdbcTemplate jdbcTemplate;
 
@@ -31,64 +29,37 @@ public class UserService {
         return jdbcTemplate.query(getUsers, readUser, user.getEmail(), user.getNickname());
     }
 
-    public enum ErrorCodes {
-        @SuppressWarnings("EnumeratedConstantNamingConvention") OK,
-        INVALID_LOGIN,
-        INCORRECT_PASSWORD,
-        LOGIN_OCCUPIED,
-        EMAIL_OCCUPIED,
-        INVALID_AUTH_DATA,
-        INVALID_REG_DATA,
+    public UserModel getUserByNickname(String nickname) {
+        final String getUser = "SELECT * FROM USERS WHERE nickname = ?";
+        return jdbcTemplate.queryForObject(getUser, readUser, nickname);
     }
 
-    private UserModel getUser(@NotNull UserModel userData) {
-        for (UserModel user: users) {
-            if (user.getNickname().equals(userData.getNickname()) || user.getEmail().equals(userData.getEmail())) {
-                return user;
-            }
-        }
-        return null;
-    }
+    public void update(UserModel user) {
+        final StringBuilder getUser = new StringBuilder("UPDATE Users SET ");
+        final ArrayList<Object> params = new ArrayList<>();
 
-    private UserModel getUserByEmail(@NotNull String email) {
-        for (UserModel user: users) {
-            if (user.getEmail().equals(email)) {
-                return user;
-            }
-        }
-        return null;
-    }
-
-    private UserModel getUserByNickname(@NotNull String nickname) {
-        for (UserModel user: users) {
-            if (user.getNickname().equals(nickname)) {
-                return user;
-            }
-        }
-        return null;
-    }
-
-    public ErrorCodes signup(UserModel newUser, UserModel result) {
-        if (newUser == null || newUser.getEmail() == null || newUser.getNickname() == null) {
-            return ErrorCodes.INVALID_AUTH_DATA;
+        if (user.getEmail() != null) {
+            getUser.append("email = ?, ");
+            params.add(user.getEmail());
         }
 
-        if (newUser.getEmail() != null && newUser.getNickname() != null && getUser(newUser) == null) {
-            users.add(newUser);
-            result.setAbout(newUser.getAbout());
-            result.setNickname(newUser.getNickname());
-            result.setEmail(newUser.getEmail());
-            result.setFullname(newUser.getFullname());
-            return ErrorCodes.OK;
-        } else {
-            final UserModel user = getUser(newUser);
-            assert user != null;
-            result.setAbout(user.getAbout());
-            result.setNickname(user.getNickname());
-            result.setEmail(user.getEmail());
-            result.setFullname(user.getFullname());
-            return ErrorCodes.EMAIL_OCCUPIED;
+        if (user.getAbout() != null) {
+            getUser.append("about = ?, ");
+            params.add(user.getAbout());
         }
+
+        if (user.getFullname() != null) {
+            getUser.append("fullname = ? ");
+            params.add(user.getFullname());
+        }
+
+        if (params.isEmpty())
+            return;
+
+        getUser.append("WHERE nickname = ?");
+        params.add(user.getNickname());
+        System.out.println(getUser.toString());
+        jdbcTemplate.update(getUser.toString(), params.toArray());
 
     }
 }

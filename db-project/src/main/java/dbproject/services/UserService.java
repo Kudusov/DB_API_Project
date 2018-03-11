@@ -18,7 +18,6 @@ public class UserService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-
     public void create(String nickname, UserModel user) {
         final String createQuery = "INSERT INTO Users (about, fullname, nickname, email) VALUES(?, ?, ?, ?)";
         jdbcTemplate.update(createQuery, user.getAbout(), user.getFullname(), user.getNickname(), user.getEmail());
@@ -64,7 +63,6 @@ public class UserService {
         getUser.deleteCharAt(getUser.length() - 1);
         getUser.append(" WHERE nickname = ?");
         params.add(user.getNickname());
-        System.out.println(getUser.toString());
         jdbcTemplate.update(getUser.toString(), params.toArray());
 
     }

@@ -33,4 +33,9 @@ public class ForumController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
         }
     }
+
+    @RequestMapping(path = "api/forum/{slug}/create", method = RequestMethod.POST)
+    public ResponseEntity createThread(){
+        return null;
+    }
 }

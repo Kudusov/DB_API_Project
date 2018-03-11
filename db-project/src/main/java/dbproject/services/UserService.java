@@ -1,15 +1,35 @@
 package dbproject.services;
 
 import dbproject.models.UserModel;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
+import java.util.List;
+import static dbproject.rowmappers.RowMappers.readUser;
 
 @SuppressWarnings("unused")
 @Service
 public class UserService {
     private ArrayList<UserModel> users = new ArrayList<>();
+
+    private JdbcTemplate jdbcTemplate;
+
+    public UserService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+
+    public void create(String nickname, UserModel user) {
+        final String createQuery = "INSERT INTO Users (about, fullname, nickname, email) VALUES(?, ?, ?, ?)";
+        jdbcTemplate.update(createQuery, user.getAbout(), user.getFullname(), user.getNickname(), user.getEmail());
+    }
+
+    public List<UserModel> getUsers(UserModel user) {
+        final String getUsers = "SELECT * FROM USERS WHERE email = ? OR nickname = ?";
+        return jdbcTemplate.query(getUsers, readUser, user.getEmail(), user.getNickname());
+    }
 
     public enum ErrorCodes {
         @SuppressWarnings("EnumeratedConstantNamingConvention") OK,
@@ -47,7 +67,6 @@ public class UserService {
         }
         return null;
     }
-
 
     public ErrorCodes signup(UserModel newUser, UserModel result) {
         if (newUser == null || newUser.getEmail() == null || newUser.getNickname() == null) {

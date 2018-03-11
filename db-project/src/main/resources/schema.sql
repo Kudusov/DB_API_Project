@@ -1,8 +1,8 @@
 DROP TABLE IF EXISTS Users;
-
+CREATE EXTENSION IF NOT EXISTS CITEXT;
 CREATE TABLE IF NOT EXISTS Users (
-  about VARCHAR (100),
-  fullname VARCHAR (40),
-  nickname VARCHAR (40),
-  email VARCHAR (40)
+  about TEXT DEFAULT NULL,
+  fullname TEXT DEFAULT NULL,
+  nickname CITEXT  UNIQUE ,
+  email CITEXT UNIQUE
 );

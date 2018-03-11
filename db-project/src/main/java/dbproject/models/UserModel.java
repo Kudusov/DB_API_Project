@@ -14,9 +14,9 @@ public class UserModel {
     }
 
     public UserModel(@JsonProperty("about") String about,
-                     @JsonProperty("email") String email,
                      @JsonProperty("fullname") String fullname,
-                     @JsonProperty("nickname") String nickname) {
+                     @JsonProperty("nickname") String nickname,
+                     @JsonProperty("email") String email) {
         this.about = about;
         this.email = email;
         this.fullname = fullname;

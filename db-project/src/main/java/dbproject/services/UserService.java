@@ -35,28 +35,34 @@ public class UserService {
     }
 
     public void update(UserModel user) {
-        final StringBuilder getUser = new StringBuilder("UPDATE Users SET ");
+
+        if (user == null) {
+            return;
+        }
+
+        final StringBuilder getUser = new StringBuilder("UPDATE Users SET");
         final ArrayList<Object> params = new ArrayList<>();
 
         if (user.getEmail() != null) {
-            getUser.append("email = ?, ");
+            getUser.append(" email = ?,");
             params.add(user.getEmail());
         }
 
         if (user.getAbout() != null) {
-            getUser.append("about = ?, ");
+            getUser.append(" about = ?,");
             params.add(user.getAbout());
         }
 
         if (user.getFullname() != null) {
-            getUser.append("fullname = ? ");
+            getUser.append(" fullname = ?,");
             params.add(user.getFullname());
         }
 
         if (params.isEmpty())
             return;
 
-        getUser.append("WHERE nickname = ?");
+        getUser.deleteCharAt(getUser.length() - 1);
+        getUser.append(" WHERE nickname = ?");
         params.add(user.getNickname());
         System.out.println(getUser.toString());
         jdbcTemplate.update(getUser.toString(), params.toArray());

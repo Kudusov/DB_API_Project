@@ -7,10 +7,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
 
@@ -28,7 +25,16 @@ public class ForumController {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(forums.create(forumData));
         } catch (DuplicateKeyException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(forums.getBySlug(forumData.getSlug()));
+        } catch (DataAccessException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
+        }
+    }
+
+    @RequestMapping(path = "/api/forum/{slug}/details", method = RequestMethod.GET)
+    public ResponseEntity forumInfo(@PathVariable("slug") String slug) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(forums.getBySlug(slug));
         } catch (DataAccessException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
         }

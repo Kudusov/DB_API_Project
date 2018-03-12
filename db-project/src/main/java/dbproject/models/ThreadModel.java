@@ -94,5 +94,5 @@ public class ThreadModel {
     public void setVotes(Integer votes) {
         this.votes = votes;
     }
-    
+
 }

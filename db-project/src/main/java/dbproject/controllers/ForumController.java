@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 @RestController
 public class ForumController {
@@ -48,9 +49,28 @@ public class ForumController {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(threads.create(threadData, slug));
         } catch (DuplicateKeyException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(threads.getThreadBySlug(threadData.getSlug()));
         } catch (DataAccessException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
+        }
+    }
+
+    @RequestMapping(path = "api/forum/{slug}/threads", method = RequestMethod.GET)
+    public ResponseEntity getThreads(@PathVariable("slug") String slug,
+                                     @RequestParam(value = "desc", required = false) Boolean desc,
+                                     @RequestParam(value = "limit", required = false) Integer limit,
+                                     @RequestParam(value = "since", required = false) String since) {
+
+        try {
+            final List<?> result = forums.getThreads(slug, since, desc, limit);
+            if (result.isEmpty()) {
+                forums.getBySlug(slug);
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(result);
+        } catch (DuplicateKeyException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
+        } catch (DataAccessException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
         }
     }
 }

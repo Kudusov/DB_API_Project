@@ -15,8 +15,8 @@ public class ThreadService {
     public ThreadService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
-
-    public ThreadModel create(ThreadModel thread, String forumSlug) {
+    @SuppressWarnings("unused")
+    public ThreadModel create2(ThreadModel thread, String forumSlug) {
         final String createThread;
         if (thread.getCreated() != null) {
             createThread = "INSERT INTO Threads (user_id, created, forum_id, slug, message, title) " +
@@ -48,9 +48,9 @@ public class ThreadService {
 
     }
 
-    public ThreadModel create2(ThreadModel thread, String forumSlug) {
+    public ThreadModel create(ThreadModel thread, String forumSlug) {
 
-        final StringBuilder sqlCreate = new StringBuilder("UPDATE Users SET");
+        final StringBuilder sqlCreate = new StringBuilder();
         final List<Object> params = new ArrayList<>();
 
         sqlCreate.append("INSERT INTO Threads (user_id, ");
@@ -82,6 +82,13 @@ public class ThreadService {
         final String sqlGetThreadById = "SELECT *, (SELECT nickname FROM users WHERE threads.user_id = id) as author," +
                 " (SELECT slug FROM forums WHERE threads.forum_id = id) as forum FROM Threads where id = ?";
         return  jdbcTemplate.queryForObject(sqlGetThreadById, readThread, id);
+    }
+
+    public ThreadModel getThreadBySlug(String slug) {
+        final String sqlGetThreadBySlug = "SELECT *, (SELECT nickname FROM users WHERE threads.user_id = id) as author," +
+                " (SELECT slug FROM forums WHERE threads.forum_id = id) as forum FROM Threads where slug = ?";
+
+        return  jdbcTemplate.queryForObject(sqlGetThreadBySlug, readThread, slug);
     }
 
     public void updateThreadCount(String slug, Integer count) {

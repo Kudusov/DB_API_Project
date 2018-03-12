@@ -23,7 +23,7 @@ public class RowMappers {
                            rs.getInt("threads"),
                            rs.getString("slug"),
                            rs.getString("title"),
-                           rs.getString("user"));
+                           rs.getString("nickname"));
 
     public static RowMapper<ThreadModel> readThread = (rs, i) -> {
         final Timestamp timestamp = rs.getTimestamp("created");

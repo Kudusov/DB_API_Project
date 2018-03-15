@@ -34,6 +34,12 @@ public class ForumService {
         return jdbcTemplate.queryForObject(sql, readForum, slug);
     }
 
+    public String getForumSlugById(Integer id) {
+        final String sql = "SELECT slug FROM forums WHERE id = ?";
+
+        return jdbcTemplate.queryForObject(sql, String.class, id);
+    }
+
     public List<ThreadModel> getThreads(String slug, String since, Boolean desc, Integer limit) {
         final StringBuilder sqlCreate = new StringBuilder();
         final List<Object> params = new ArrayList<>();

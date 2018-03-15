@@ -91,8 +91,21 @@ public class ThreadService {
         return  jdbcTemplate.queryForObject(sqlGetThreadBySlug, readThread, slug);
     }
 
+    public ThreadModel getThreadBySlugOrID(String slug_or_id) {
+        if (slug_or_id.matches("\\d+")) {
+            return getThreadById(Integer.parseInt(slug_or_id));
+        }
+        return getThreadBySlug(slug_or_id);
+    }
+
     public void updateThreadCount(String slug, Integer count) {
         final String sqlUpdateThreadCount = "UPDATE Forums SET threads = threads + ? WHERE slug = ?";
         jdbcTemplate.update(sqlUpdateThreadCount, count, slug);
+    }
+
+    public Integer getForumIdByThreadId(Integer id) {
+        final String sqlGetForumId = "SELECT forum_id from Threads where id = ?";
+
+        return jdbcTemplate.queryForObject(sqlGetForumId, Integer.class, id);
     }
 }

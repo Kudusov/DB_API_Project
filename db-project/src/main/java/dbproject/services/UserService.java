@@ -33,6 +33,11 @@ public class UserService {
         return jdbcTemplate.queryForObject(getUser, readUser, nickname);
     }
 
+    public Integer getUserIdByNickname(String nickname) {
+        final String getUser = "SELECT id FROM USERS WHERE nickname = ?";
+        return jdbcTemplate.queryForObject(getUser, Integer.class, nickname);
+    }
+
     public void update(UserModel user) {
 
         if (user == null) {

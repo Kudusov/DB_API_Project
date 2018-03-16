@@ -2,6 +2,7 @@ package dbproject.controllers;
 
 import dbproject.models.ErrorModel;
 import dbproject.models.PostModel;
+import dbproject.models.VoteModel;
 import dbproject.services.PostService;
 import dbproject.services.ThreadService;
 import org.springframework.dao.DataAccessException;
@@ -36,6 +37,17 @@ public class ThreadController {
            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
         } catch (DataAccessException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
+        }
+    }
+
+    @RequestMapping(path = "api/thread/{slug_or_id}/vote", method = RequestMethod.POST)
+    public ResponseEntity updateVoice(@RequestBody VoteModel vote, @PathVariable("slug_or_id") String slug_or_id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(threadService.insertOrUpdateVotes(vote.getNickname(), slug_or_id, vote.getVoice()));
+        } catch (DuplicateKeyException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
+        } catch (DataAccessException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
         }
     }
 

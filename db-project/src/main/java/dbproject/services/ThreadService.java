@@ -11,10 +11,13 @@ import static dbproject.rowmappers.RowMappers.readThread;
 @Service
 public class ThreadService {
     private JdbcTemplate jdbcTemplate;
+    private UserService userService;
 
-    public ThreadService(JdbcTemplate jdbcTemplate) {
+    public ThreadService(JdbcTemplate jdbcTemplate, UserService userService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.userService = userService;
     }
+
     @SuppressWarnings("unused")
     public ThreadModel create2(ThreadModel thread, String forumSlug) {
         final String createThread;
@@ -107,5 +110,19 @@ public class ThreadService {
         final String sqlGetForumId = "SELECT forum_id from Threads where id = ?";
 
         return jdbcTemplate.queryForObject(sqlGetForumId, Integer.class, id);
+    }
+
+    public ThreadModel insertOrUpdateVotes(String nickname, String slug_or_id, Integer vote) {
+        final String sqlInsertOrUpdateVotes = "INSERT INTO Votes (user_id, thread_id, voice) VALUES (?, ?, ?)" +
+                " ON CONFLICT (user_id, thread_id) DO UPDATE SET voice = EXCLUDED.voice";
+
+        final String sqlUpdateVotes = "UPDATE Threads SET votes = (SELECT SUM(voice) FROM Votes WHERE thread_id = ?) " +
+                "WHERE id = ?";
+
+        final Integer userId = userService.getUserIdByNickname(nickname);
+        final ThreadModel thread = getThreadBySlugOrID(slug_or_id);
+        jdbcTemplate.update(sqlInsertOrUpdateVotes, userId, thread.getId(), vote);
+        jdbcTemplate.update(sqlUpdateVotes, thread.getId(), thread.getId());
+        return getThreadBySlugOrID(slug_or_id);
     }
 }

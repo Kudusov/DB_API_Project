@@ -129,7 +129,7 @@ public class ThreadService {
     }
 
     public ThreadModel updateThread(ThreadUpdateModel updateData, String slug_or_id) {
-        ThreadModel thread = getThreadBySlugOrID(slug_or_id);
+        final ThreadModel thread = getThreadBySlugOrID(slug_or_id);
 
         final String sqlUpdate =  "UPDATE Threads SET message = ?, title = ? WHERE id = ?";
         Boolean isEmptyData = true;
@@ -143,7 +143,7 @@ public class ThreadService {
             isEmptyData = false;
         }
 
-        if (isEmptyData == false) {
+        if (!isEmptyData) {
             jdbcTemplate.update(sqlUpdate, thread.getMessage(), thread.getTitle(), thread.getId());
         }
 

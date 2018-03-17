@@ -28,14 +28,13 @@ public class PostService {
 
     public List<PostModel> create(List<PostModel> posts, String slug_or_id) {
 
+        // Можно сначала запросить id, и сделать просто Insert без returning
         final String sqlCreate = "INSERT INTO Posts (user_id, created, forum_id, message, parent, thread_id)" +
-                " VALUES(?, ?, ?, ?, ?, ?)";
+                " VALUES(?, ?, ?, ?, ?, ?) RETURNING id";
 
         final ThreadModel thread = threadService.getThreadBySlugOrID(slug_or_id);
 
         if (posts == null || posts.isEmpty()) {
-            if (posts != null)
-                System.out.println("чтооооо? " + posts.size());
             return new ArrayList<>();
         }
 
@@ -55,8 +54,8 @@ public class PostService {
             }
 
             post.setParent(parentId);
-            System.out.println("blydd");
-            jdbcTemplate.update(sqlCreate, userId, currentTime, forumId, post.getMessage(), parentId, thread.getId());
+            final Integer id = jdbcTemplate.queryForObject(sqlCreate, Integer.class, userId, currentTime, forumId, post.getMessage(), parentId, thread.getId());
+            post.setId(id);
         }
 
         return posts;

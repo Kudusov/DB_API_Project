@@ -1,6 +1,8 @@
 package dbproject.services;
 
 import dbproject.models.ThreadModel;
+import dbproject.models.ThreadUpdateModel;
+import dbproject.models.VoteModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -112,17 +114,39 @@ public class ThreadService {
         return jdbcTemplate.queryForObject(sqlGetForumId, Integer.class, id);
     }
 
-    public ThreadModel insertOrUpdateVotes(String nickname, String slug_or_id, Integer vote) {
+    public ThreadModel insertOrUpdateVotes(VoteModel voteModel, String slug_or_id) {
         final String sqlInsertOrUpdateVotes = "INSERT INTO Votes (user_id, thread_id, voice) VALUES (?, ?, ?)" +
                 " ON CONFLICT (user_id, thread_id) DO UPDATE SET voice = EXCLUDED.voice";
 
         final String sqlUpdateVotes = "UPDATE Threads SET votes = (SELECT SUM(voice) FROM Votes WHERE thread_id = ?) " +
                 "WHERE id = ?";
 
-        final Integer userId = userService.getUserIdByNickname(nickname);
+        final Integer userId = userService.getUserIdByNickname(voteModel.getNickname());
         final ThreadModel thread = getThreadBySlugOrID(slug_or_id);
-        jdbcTemplate.update(sqlInsertOrUpdateVotes, userId, thread.getId(), vote);
+        jdbcTemplate.update(sqlInsertOrUpdateVotes, userId, thread.getId(), voteModel.getVoice());
         jdbcTemplate.update(sqlUpdateVotes, thread.getId(), thread.getId());
         return getThreadBySlugOrID(slug_or_id);
+    }
+
+    public ThreadModel updateThread(ThreadUpdateModel updateData, String slug_or_id) {
+        ThreadModel thread = getThreadBySlugOrID(slug_or_id);
+
+        final String sqlUpdate =  "UPDATE Threads SET message = ?, title = ? WHERE id = ?";
+        Boolean isEmptyData = true;
+        if (updateData.getMessage() != null) {
+            thread.setMessage(updateData.getMessage());
+            isEmptyData = false;
+        }
+
+        if (updateData.getTitle() != null) {
+            thread.setTitle(updateData.getTitle());
+            isEmptyData = false;
+        }
+
+        if (isEmptyData == false) {
+            jdbcTemplate.update(sqlUpdate, thread.getMessage(), thread.getTitle(), thread.getId());
+        }
+
+        return thread;
     }
 }

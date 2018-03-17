@@ -2,6 +2,7 @@ package dbproject.controllers;
 
 import dbproject.models.ErrorModel;
 import dbproject.models.PostModel;
+import dbproject.models.ThreadUpdateModel;
 import dbproject.models.VoteModel;
 import dbproject.services.PostService;
 import dbproject.services.ThreadService;
@@ -40,14 +41,32 @@ public class ThreadController {
         }
     }
 
+    @RequestMapping(path = "api/thread/{slug_or_id}/details", method = RequestMethod.GET)
+    public ResponseEntity threadDetails(@PathVariable("slug_or_id") String slug_or_id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(threadService.getThreadBySlugOrID(slug_or_id));
+        } catch (DataAccessException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
+        }
+    }
+
+    @RequestMapping(path = "api/thread/{slug_or_id}/details", method = RequestMethod.POST)
+    public ResponseEntity threadUpdate(@RequestBody ThreadUpdateModel threadData, @PathVariable("slug_or_id") String slug_or_id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(threadService.updateThread(threadData, slug_or_id));
+        } catch (DataAccessException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
+        }
+    }
+
     @RequestMapping(path = "api/thread/{slug_or_id}/vote", method = RequestMethod.POST)
     public ResponseEntity updateVoice(@RequestBody VoteModel vote, @PathVariable("slug_or_id") String slug_or_id) {
         try {
-            return ResponseEntity.status(HttpStatus.OK).body(threadService.insertOrUpdateVotes(vote.getNickname(), slug_or_id, vote.getVoice()));
+            return ResponseEntity.status(HttpStatus.OK).body(threadService.insertOrUpdateVotes(vote, slug_or_id));
         } catch (DuplicateKeyException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
         } catch (DataAccessException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
         }
     }
 

@@ -6,16 +6,13 @@ import dbproject.models.ThreadUpdateModel;
 import dbproject.models.VoteModel;
 import dbproject.services.PostService;
 import dbproject.services.ThreadService;
+import org.apache.coyote.Response;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -68,6 +65,15 @@ public class ThreadController {
         } catch (DataAccessException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
         }
+    }
+
+    @RequestMapping(path = "api/thread/{slug_or_id}/posts", method = RequestMethod.GET)
+    public ResponseEntity getPosts(@PathVariable("slug_or_id") String slug_or_id,
+                                   @RequestParam(value = "limit", required = false) Integer limit,
+                                   @RequestParam(value = "since", required = false) Integer since,
+                                   @RequestParam(value = "sort", required = false) String sort,
+                                   @RequestParam(value = "desc", required = false) Boolean desc) {
+        return null;
     }
 
 }

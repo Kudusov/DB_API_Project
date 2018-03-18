@@ -8,6 +8,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+
+import java.sql.Array;
+import java.sql.SQLException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -32,10 +35,11 @@ public class PostService {
 
     public List<PostModel> create(List<PostModel> posts, String slug_or_id) throws DuplicateKeyException {
 
-        // Можно сначала запросить id, и сделать просто Insert без returning
-        final String sqlCreate = "INSERT INTO Posts (user_id, created, forum_id, message, parent, thread_id)" +
-                " VALUES(?, ?, ?, ?, ?, ?) RETURNING id";
+        // !!! Разобраться с Connection
+        final String sqlCreate = "INSERT INTO Posts (id, user_id, created, forum_id, message, parent, thread_id, path)" +
+                " VALUES(?, ?, ?, ?, ?, ?, ?, array_append(?, ?::INTEGER))";
 
+        final String sqlAddCurrentIdToPath = "UPDATE Posts SET path = array_append(path, id) WHERE id = ?";
         final ThreadModel thread = threadService.getThreadBySlugOrID(slug_or_id);
 
         if (posts == null || posts.isEmpty()) {
@@ -62,7 +66,28 @@ public class PostService {
             }
 
             post.setParent(parentId);
-            final Integer id = jdbcTemplate.queryForObject(sqlCreate, Integer.class, userId, currentTime, forumId, post.getMessage(), parentId, thread.getId());
+            final Array path = parentId == 0 ? null : jdbcTemplate.queryForObject("SELECT path FROM Posts WHERE id = ?", Array.class, parentId);
+            final Integer id = getNextId();
+
+
+//            Integer[] ints = null;
+//            try {
+//                if (path != null) {
+//                    ints = (Integer[]) path.getArray();
+//                }
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//            if (ints != null) {
+//                for (Integer a : ints) {
+//                    System.out.print(a.toString() + '.');
+//                }
+//                System.out.println();
+//            }
+
+            jdbcTemplate.update(sqlCreate, id, userId, currentTime,
+                                forumId, post.getMessage(), parentId, thread.getId(), path, id);
+            //jdbcTemplate.update(sqlAddCurrentIdToPath, id);
             post.setId(id);
 
             // Обновляем количество постов в ветке
@@ -95,6 +120,7 @@ public class PostService {
         if (related == null) {
             return postDetail;
         }
+
         if (related.contains("user")) {
             postDetail.setAuthor(userService.getUserByNickname(post.getAuthor()));
         }
@@ -115,10 +141,15 @@ public class PostService {
         final String sqlUpdatePost = "UPDATE Posts SET message = ?, is_edited = TRUE WHERE id = ?";
 
         // Можно написать метод, который возращает message по postID
-        PostModel post = getPostById(id);
+        final PostModel post = getPostById(id);
         if (postUpdateModel.getMessage() != null && !postUpdateModel.getMessage().equals(post.getMessage())) {
             jdbcTemplate.update(sqlUpdatePost, postUpdateModel.getMessage(), id);
         }
         return getPostById(id);
+    }
+
+    public Integer getNextId() {
+        final String sqlGetNext = "SELECT nextval(pg_get_serial_sequence('posts', 'id'))";
+        return jdbcTemplate.queryForObject(sqlGetNext, Integer.class);
     }
 }

@@ -1,5 +1,6 @@
 package dbproject.services;
 
+import dbproject.models.PostModel;
 import dbproject.models.ThreadModel;
 import dbproject.models.ThreadUpdateModel;
 import dbproject.models.VoteModel;
@@ -10,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static dbproject.rowmappers.RowMappers.readThread;
+import static dbproject.rowmappers.RowMappers.readPost;
+
 @Service
 public class ThreadService {
     private JdbcTemplate jdbcTemplate;
@@ -148,5 +151,52 @@ public class ThreadService {
         }
 
         return thread;
+    }
+
+    public List<PostModel> getPosts(String slug_or_id, Integer limit, Integer since, String sort, Boolean desc) {
+        final ThreadModel thread = getThreadBySlugOrID(slug_or_id);
+        switch (sort) {
+            case "flat":
+                return getSqlSortFlat(thread.getId(), limit, since, desc);
+            case "tree":
+                return null;
+            case "parent_tree":
+                return null;
+            default:
+                return null;
+        }
+
+    }
+
+    public List<PostModel> getSqlSortFlat(Integer thread_id, Integer limit, Integer since, Boolean desc) {
+        final StringBuilder sqlQuery = new StringBuilder();
+        final ArrayList<Object> params = new ArrayList<>();
+        sqlQuery.append("SELECT u.nickname as author, p.created, f.slug as forum, p.id, p.is_edited as isEdited, p.message, p.parent, p.thread_id as thread " +
+                " FROM Posts p JOIN users u ON p.user_id = u.id JOIN forums f on p.forum_id = f.id WHERE thread_id = ? ");
+        params.add(thread_id);
+
+        if (since != null) {
+            sqlQuery.append(" AND p.id " );
+
+            if (desc != null && desc.equals(Boolean.TRUE)) {
+                sqlQuery.append(" < ? ");
+            } else {
+                sqlQuery.append(" > ? ");
+            }
+
+            params.add(since);
+        }
+
+        sqlQuery.append(" ORDER BY (p.id) ");
+        if (desc != null && desc.equals(Boolean.TRUE)) {
+            sqlQuery.append(" DESC ");
+        }
+
+        if (limit != null) {
+            sqlQuery.append(" LIMIT ? ");
+            params.add(limit);
+        }
+
+        return jdbcTemplate.query(sqlQuery.toString(), readPost, params.toArray());
     }
 }

@@ -73,7 +73,11 @@ public class ThreadController {
                                    @RequestParam(value = "since", required = false) Integer since,
                                    @RequestParam(value = "sort", required = false) String sort,
                                    @RequestParam(value = "desc", required = false) Boolean desc) {
-        return null;
-    }
 
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(threadService.getPosts(slug_or_id, limit, since, sort, desc));
+        } catch (DataAccessException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
+        }
+    }
 }

@@ -66,7 +66,7 @@ public class PostService {
             }
 
             post.setParent(parentId);
-            final Array path = parentId == 0 ? null : jdbcTemplate.queryForObject("SELECT path FROM Posts WHERE id = ?", Array.class, parentId);
+            final Array path = parentId == 0 ? null : jdbcTemplate.queryForObject("SELECT path FROM Posts  WHERE id = ?", Array.class, parentId);
             final Integer id = getNextId();
 
 

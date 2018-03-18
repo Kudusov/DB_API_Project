@@ -159,7 +159,7 @@ public class ThreadService {
             case "flat":
                 return getSqlSortFlat(thread.getId(), limit, since, desc);
             case "tree":
-                return null;
+                return getSqlSortTree(thread.getId(), limit, since, desc);
             case "parent_tree":
                 return null;
             default:
@@ -199,4 +199,73 @@ public class ThreadService {
 
         return jdbcTemplate.query(sqlQuery.toString(), readPost, params.toArray());
     }
+
+    public List<PostModel> getSqlSortTree(Integer thread_id, Integer limit, Integer since, Boolean desc) {
+        final StringBuilder sqlQuery = new StringBuilder();
+        final ArrayList<Object> params = new ArrayList<>();
+        sqlQuery.append("SELECT u.nickname as author, p.created, f.slug as forum, p.id, p.is_edited as isEdited, p.message, p.parent, p.thread_id as thread " +
+                " FROM Posts p JOIN users u ON p.user_id = u.id JOIN forums f on p.forum_id = f.id WHERE thread_id = ? ");
+        params.add(thread_id);
+
+        if (since != null) {
+            sqlQuery.append(" AND p.path " );
+
+            if (desc != null && desc.equals(Boolean.TRUE)) {
+                sqlQuery.append(" < ");
+            } else {
+                sqlQuery.append(" > ");
+            }
+
+            sqlQuery.append(" (SELECT path from Posts Where id = ?) ");
+            params.add(since);
+        }
+
+        sqlQuery.append(" ORDER BY p.path ");
+        if (desc != null && desc.equals(Boolean.TRUE)) {
+            sqlQuery.append(" DESC ");
+        }
+
+        if (limit != null) {
+            sqlQuery.append(" LIMIT ? ");
+            params.add(limit);
+        }
+
+        return jdbcTemplate.query(sqlQuery.toString(), readPost, params.toArray());
+    }
+
+    public List<PostModel> getSqlSortParentTree(Integer thread_id, Integer limit, Integer since, Boolean desc) {
+        final StringBuilder sqlQuery = new StringBuilder();
+        final ArrayList<Object> params = new ArrayList<>();
+        sqlQuery.append("SELECT u.nickname as author, p.created, f.slug as forum, p.id, p.is_edited as isEdited, p.message, p.parent, p.thread_id as thread " +
+                " FROM Posts p JOIN users u ON p.user_id = u.id JOIN forums f on p.forum_id = f.id " +
+                " WHERE p.path[1] IN ( SELECT id FROM posts WHERE thread_id = ? AND parent = 0 ");
+        params.add(thread_id);
+
+        if (since != null) {
+            sqlQuery.append(" AND p.path " );
+
+            if (desc != null && desc.equals(Boolean.TRUE)) {
+                sqlQuery.append(" < ");
+            } else {
+                sqlQuery.append(" > ");
+            }
+
+            sqlQuery.append(" (SELECT path from Posts Where id = ?) ");
+            params.add(since);
+        }
+
+        sqlQuery.append(" ORDER BY p.id ");
+        if (desc != null && desc.equals(Boolean.TRUE)) {
+            sqlQuery.append(" DESC ");
+        }
+
+        if (limit != null) {
+            sqlQuery.append(" LIMIT ? ");
+            params.add(limit);
+        }
+
+
+        return jdbcTemplate.query(sqlQuery.toString(), readPost, params.toArray());
+    }
+
 }

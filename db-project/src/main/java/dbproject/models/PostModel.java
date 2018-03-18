@@ -13,6 +13,10 @@ public class PostModel {
     private Integer parent;
     private Integer thread;
 
+    public PostModel() {
+
+    }
+
     public PostModel(@JsonProperty("author") String author,
                      @JsonProperty("created") String created,
                      @JsonProperty("forum") String forum,
@@ -63,12 +67,12 @@ public class PostModel {
         this.id = id;
     }
 
-    public Boolean getEdited() {
+    public Boolean getIsEdited() {
         return isEdited;
     }
 
-    public void setEdited(Boolean edited) {
-        isEdited = edited;
+    public void setIsEdited(Boolean isEdited) {
+        this.isEdited = isEdited;
     }
 
     public String getMessage() {

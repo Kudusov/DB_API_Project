@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 public class ForumController {
@@ -50,6 +51,8 @@ public class ForumController {
             return ResponseEntity.status(HttpStatus.CREATED).body(threads.create(threadData, slug));
         } catch (DuplicateKeyException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(threads.getThreadBySlug(threadData.getSlug()));
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
         } catch (DataAccessException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
         }

@@ -69,4 +69,10 @@ public class ForumService {
 
         return jdbcTemplate.query(sqlCreate.toString(), readThread, params.toArray());
     }
+
+    public void updatePostCount(Integer postId, Integer diff) {
+        final String sqlUpdatePostCount = "UPDATE Forums SET posts = posts + ? WHERE id = ?";
+        jdbcTemplate.update(sqlUpdatePostCount, diff, postId);
+    }
+
 }

@@ -1,15 +1,19 @@
 package dbproject.services;
 
+import dbproject.models.PostDetailModel;
 import dbproject.models.PostModel;
+import dbproject.models.PostUpdateModel;
 import dbproject.models.ThreadModel;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import static dbproject.rowmappers.RowMappers.readPost;
 @Service
 public class PostService {
     private JdbcTemplate jdbcTemplate;
@@ -26,7 +30,7 @@ public class PostService {
 
 
 
-    public List<PostModel> create(List<PostModel> posts, String slug_or_id) {
+    public List<PostModel> create(List<PostModel> posts, String slug_or_id) throws DuplicateKeyException {
 
         // Можно сначала запросить id, и сделать просто Insert без returning
         final String sqlCreate = "INSERT INTO Posts (user_id, created, forum_id, message, parent, thread_id)" +
@@ -50,19 +54,71 @@ public class PostService {
             final Integer userId = userService.getUserIdByNickname(post.getAuthor());
             Integer parentId = 0;
             if (post.getParent() != null && post.getParent() != 0) {
-                parentId = isCorrectParent(post.getParent(), thread.getId());
+                try {
+                    parentId = getParentId(post.getParent(), thread.getId());
+                } catch (DataAccessException ex) {
+                    throw new DuplicateKeyException("parent not found");
+                }
             }
 
             post.setParent(parentId);
             final Integer id = jdbcTemplate.queryForObject(sqlCreate, Integer.class, userId, currentTime, forumId, post.getMessage(), parentId, thread.getId());
             post.setId(id);
+
+            // Обновляем количество постов в ветке
+            forumService.updatePostCount(forumId, 1);
         }
 
         return posts;
     }
 
-    public Integer isCorrectParent(Integer postId, Integer threadId) {
+    public Integer getParentId(Integer postId, Integer threadId) {
         final String sqlIsCorrectParent = "SELECT id FROM posts WHERE id = ? and thread_id = ?";
         return jdbcTemplate.queryForObject(sqlIsCorrectParent, Integer.class, postId, threadId);
+    }
+
+    public PostModel getPostById(Integer postId) {
+        final String sqlGetPost = "SELECT (SELECT nickname from users WHERE id = p.user_id) as author, " +
+                " (SELECT slug FROM Forums WHERE id = p.forum_id) as forum, " +
+                " created, id, is_edited as isEdited, message, parent, thread_id as thread " +
+                " from posts p where id = ?";
+
+         return jdbcTemplate.queryForObject(sqlGetPost, readPost, postId);
+    }
+
+    public PostDetailModel getInfo(Integer postId, List<String> related) {
+
+        final PostDetailModel postDetail = new PostDetailModel();
+        final PostModel post = getPostById(postId);
+        postDetail.setPost(post);
+
+        if (related == null) {
+            return postDetail;
+        }
+        if (related.contains("user")) {
+            postDetail.setAuthor(userService.getUserByNickname(post.getAuthor()));
+        }
+
+        if (related.contains("thread")) {
+
+            postDetail.setThread(threadService.getThreadById(post.getThread()));
+        }
+
+        if (related.contains("forum")) {
+            postDetail.setForum(forumService.getBySlug(post.getForum()));
+        }
+
+        return postDetail;
+    }
+
+    public PostModel updatePost(Integer id, PostUpdateModel postUpdateModel) {
+        final String sqlUpdatePost = "UPDATE Posts SET message = ?, is_edited = TRUE WHERE id = ?";
+
+        // Можно написать метод, который возращает message по postID
+        PostModel post = getPostById(id);
+        if (postUpdateModel.getMessage() != null && !postUpdateModel.getMessage().equals(post.getMessage())) {
+            jdbcTemplate.update(sqlUpdatePost, postUpdateModel.getMessage(), id);
+        }
+        return getPostById(id);
     }
 }

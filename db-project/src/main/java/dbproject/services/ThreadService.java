@@ -155,15 +155,15 @@ public class ThreadService {
 
     public List<PostModel> getPosts(String slug_or_id, Integer limit, Integer since, String sort, Boolean desc) {
         final ThreadModel thread = getThreadBySlugOrID(slug_or_id);
+        if (sort == null)
+            sort = "flat";
         switch (sort) {
-            case "flat":
-                return getSqlSortFlat(thread.getId(), limit, since, desc);
             case "tree":
                 return getSqlSortTree(thread.getId(), limit, since, desc);
             case "parent_tree":
-                return null;
+                return getSqlSortParentTree(thread.getId(), limit, since, desc);
             default:
-                return null;
+                return getSqlSortFlat(thread.getId(), limit, since, desc);
         }
 
     }
@@ -242,7 +242,7 @@ public class ThreadService {
         params.add(thread_id);
 
         if (since != null) {
-            sqlQuery.append(" AND p.path " );
+            sqlQuery.append(" AND id " );
 
             if (desc != null && desc.equals(Boolean.TRUE)) {
                 sqlQuery.append(" < ");
@@ -250,11 +250,11 @@ public class ThreadService {
                 sqlQuery.append(" > ");
             }
 
-            sqlQuery.append(" (SELECT path from Posts Where id = ?) ");
+            sqlQuery.append(" (SELECT path[1] from Posts Where id = ?) ");
             params.add(since);
         }
 
-        sqlQuery.append(" ORDER BY p.id ");
+        sqlQuery.append(" ORDER BY id ");
         if (desc != null && desc.equals(Boolean.TRUE)) {
             sqlQuery.append(" DESC ");
         }
@@ -264,6 +264,11 @@ public class ThreadService {
             params.add(limit);
         }
 
+        sqlQuery.append(" ) ORDER BY ");
+        if (desc != null && desc.equals(Boolean.TRUE)) {
+            sqlQuery.append(" p.path[1] DESC, ");
+        }
+        sqlQuery.append(" p.path ");
 
         return jdbcTemplate.query(sqlQuery.toString(), readPost, params.toArray());
     }

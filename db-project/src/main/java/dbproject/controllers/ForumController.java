@@ -76,4 +76,17 @@ public class ForumController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
         }
     }
+
+    @RequestMapping(path = "api/forum/{slug}/users", method = RequestMethod.GET)
+    public ResponseEntity getUsers(@PathVariable("slug") String slug,
+                                     @RequestParam(value = "desc", required = false) Boolean desc,
+                                     @RequestParam(value = "limit", required = false) Integer limit,
+                                     @RequestParam(value = "since", required = false) String since) {
+
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(forums.getUsers(slug, since, desc, limit));
+        } catch (DataAccessException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorModel(ex.getMessage()));
+        }
+    }
 }

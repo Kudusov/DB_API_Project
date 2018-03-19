@@ -71,4 +71,14 @@ public class UserService {
         jdbcTemplate.update(getUser.toString(), params.toArray());
 
     }
+
+    public Integer getRowCount() {
+        final String sqlQuery = "SELECT COUNT(*) FROM Users";
+        return jdbcTemplate.queryForObject(sqlQuery, Integer.class);
+    }
+
+    public void clear() {
+        final String sqlQuery = "DELETE FROM Users";
+        jdbcTemplate.execute(sqlQuery);
+    }
 }

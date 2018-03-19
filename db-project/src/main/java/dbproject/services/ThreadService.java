@@ -273,4 +273,13 @@ public class ThreadService {
         return jdbcTemplate.query(sqlQuery.toString(), readPost, params.toArray());
     }
 
+    public Integer getRowCount() {
+        final String sqlQuery = "SELECT COUNT(*) FROM Threads";
+        return jdbcTemplate.queryForObject(sqlQuery, Integer.class);
+    }
+
+    public void clear() {
+        final String sqlQuery = "DELETE FROM Threads";
+        jdbcTemplate.execute(sqlQuery);
+    }
 }

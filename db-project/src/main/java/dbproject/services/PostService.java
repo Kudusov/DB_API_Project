@@ -10,7 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.sql.Array;
-import java.sql.SQLException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -30,7 +29,6 @@ public class PostService {
         this.forumService = forumService;
         this.userService = userService;
     }
-
 
 
     public List<PostModel> create(List<PostModel> posts, String slug_or_id) throws DuplicateKeyException {
@@ -152,4 +150,15 @@ public class PostService {
         final String sqlGetNext = "SELECT nextval(pg_get_serial_sequence('posts', 'id'))";
         return jdbcTemplate.queryForObject(sqlGetNext, Integer.class);
     }
+
+    public Integer getRowCount() {
+        final String sqlQuery = "SELECT COUNT(*) FROM Posts";
+        return jdbcTemplate.queryForObject(sqlQuery, Integer.class);
+    }
+
+    public void clear() {
+        final String sqlQuery = "DELETE FROM Posts";
+        jdbcTemplate.execute(sqlQuery);
+    }
+
 }

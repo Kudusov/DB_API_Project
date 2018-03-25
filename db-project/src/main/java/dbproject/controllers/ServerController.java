@@ -35,6 +35,7 @@ public class ServerController {
         final Integer forums = forumService.getRowCount();
         final Integer threads = threadService.getRowCount();
 
+
         return ResponseEntity.status(HttpStatus.OK).body(new StatusModel(users, forums, threads, posts));
     }
 

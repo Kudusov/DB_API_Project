@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.sql.Array;
+import java.sql.SQLException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -34,10 +35,10 @@ public class PostService {
     public List<PostModel> create(List<PostModel> posts, String slug_or_id) throws DuplicateKeyException {
 
         // !!! Разобраться с Connection
-        final String sqlCreate = "INSERT INTO Posts (id, user_id, created, forum_id, message, parent, thread_id, path)" +
-                " VALUES(?, ?, ?, ?, ?, ?, ?, array_append(?, ?::INTEGER))";
+        final String sqlCreate = "INSERT INTO Posts (id, user_id, created, forum_id, message, parent, thread_id, path, root_id)" +
+                " VALUES(?, ?, ?, ?, ?, ?, ?, array_append(?, ?::INTEGER), ?)";
 
-        final String sqlAddCurrentIdToPath = "UPDATE Posts SET path = array_append(path, id) WHERE id = ?";
+//        final String sqlAddCurrentIdToPath = "UPDATE Posts SET path = array_append(path, id) WHERE id = ?";
         final ThreadModel thread = threadService.getThreadBySlugOrID(slug_or_id);
 
         if (posts == null || posts.isEmpty()) {
@@ -66,7 +67,12 @@ public class PostService {
             post.setParent(parentId);
             final Array path = parentId == 0 ? null : jdbcTemplate.queryForObject("SELECT path FROM Posts  WHERE id = ?", Array.class, parentId);
             final Integer id = getNextId();
-
+            Integer root_id;
+            try {
+                root_id = parentId == 0 ? id : ((Integer[]) path.getArray())[0];
+            } catch (SQLException e) {
+                root_id = id;
+            }
 
 //            Integer[] ints = null;
 //            try {
@@ -84,7 +90,7 @@ public class PostService {
 //            }
 
             jdbcTemplate.update(sqlCreate, id, userId, currentTime,
-                                forumId, post.getMessage(), parentId, thread.getId(), path, id);
+                                forumId, post.getMessage(), parentId, thread.getId(), path, id, root_id);
             //jdbcTemplate.update(sqlAddCurrentIdToPath, id);
             post.setId(id);
 

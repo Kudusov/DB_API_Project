@@ -238,7 +238,7 @@ public class ThreadService {
         final ArrayList<Object> params = new ArrayList<>();
         sqlQuery.append("SELECT u.nickname as author, p.created, f.slug as forum, p.id, p.is_edited as isEdited, p.message, p.parent, p.thread_id as thread " +
                 " FROM Posts p JOIN users u ON p.user_id = u.id JOIN forums f on p.forum_id = f.id " +
-                " WHERE p.path[1] IN ( SELECT id FROM posts WHERE thread_id = ? AND parent = 0 ");
+                " WHERE p.root_id IN ( SELECT id FROM posts WHERE thread_id = ? AND parent = 0 ");
         params.add(thread_id);
 
         if (since != null) {
@@ -250,7 +250,7 @@ public class ThreadService {
                 sqlQuery.append(" > ");
             }
 
-            sqlQuery.append(" (SELECT path[1] from Posts Where id = ?) ");
+            sqlQuery.append(" (SELECT root_id from Posts Where id = ?) ");
             params.add(since);
         }
 
@@ -266,7 +266,7 @@ public class ThreadService {
 
         sqlQuery.append(" ) ORDER BY ");
         if (desc != null && desc.equals(Boolean.TRUE)) {
-            sqlQuery.append(" p.path[1] DESC, ");
+            sqlQuery.append(" p.root_id DESC, ");
         }
         sqlQuery.append(" p.path ");
 

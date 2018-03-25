@@ -1,0 +1,73 @@
+DROP TABLE IF EXISTS Users CASCADE;
+DROP TABLE IF EXISTS Forums CASCADE;
+DROP TABLE IF EXISTS Threads CASCADE;
+DROP TABLE IF EXISTS Posts CASCADE;
+DROP TABLE IF EXISTS Votes CASCADE ;
+CREATE EXTENSION IF NOT EXISTS CITEXT;
+
+DROP INDEX IF EXISTS forums_user_id_idx;
+DROP INDEX IF EXISTS threads_user_id_idx;
+DROP INDEX IF EXISTS threads_forums_id_idx;
+DROP INDEX IF EXISTS posts_forum_id_idx;
+DROP INDEX IF EXISTS posts_user_id_idx;
+DROP INDEX IF EXISTS posts_path_thread_id_idx;
+DROP INDEX IF EXISTS posts_threads_id_idx;
+
+
+CREATE TABLE IF NOT EXISTS Users (
+  id SERIAL PRIMARY KEY,
+  about TEXT DEFAULT NULL,
+  fullname TEXT DEFAULT NULL,
+  nickname CITEXT  UNIQUE ,
+  email CITEXT UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS Forums (
+  id SERIAL PRIMARY KEY,
+  posts INTEGER DEFAULT 0,
+  threads INTEGER DEFAULT 0,
+  title TEXT,
+  slug CITEXT UNIQUE NOT NULL,
+  user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS Threads (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE NOT NULL,
+  created TIMESTAMPTZ DEFAULT NOW(),
+  forum_id INTEGER REFERENCES Forums(id) ON DELETE CASCADE NOT NULL,
+  message TEXT,
+  slug CITEXT UNIQUE DEFAULT NULL,
+  title TEXT,
+  votes INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS Posts (
+  user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE NOT NULL,
+  created TIMESTAMPTZ DEFAULT NOW(),
+  forum_id INTEGER REFERENCES Forums(id) ON DELETE CASCADE NOT NULL,
+  id SERIAL PRIMARY KEY,
+  is_edited BOOLEAN NOT NULL DEFAULT FALSE,
+  message TEXT,
+  parent INTEGER DEFAULT 0,
+  thread_id INTEGER REFERENCES Threads(id) ON DELETE CASCADE NOT NULL,
+  path INTEGER [] NOT NULL,
+  root_id INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS Votes (
+  user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE NOT NULL,
+  thread_id INTEGER REFERENCES Threads(id) ON DELETE CASCADE NOT NULL,
+  voice INTEGER DEFAULT 0,
+  CONSTRAINT unique_pair UNIQUE (user_id, thread_id)
+);
+
+CREATE INDEX IF NOT EXISTS forums_user_id_idx ON Forums (user_id);
+CREATE INDEX IF NOT EXISTS threads_user_id_idx ON Threads (user_id);
+CREATE INDEX IF NOT EXISTS threads_forums_id_idx ON Threads (forum_id);
+
+CREATE INDEX IF NOT EXISTS posts_user_id_idx ON Posts (user_id);
+CREATE INDEX IF NOT EXISTS posts_forum_id_idx ON Posts (forum_id);
+CREATE INDEX IF NOT EXISTS posts_threads_id_idx ON Posts (thread_id);
+CREATE INDEX IF NOT EXISTS posts_path_idx ON Posts (path);
+CREATE INDEX IF NOT EXISTS posts_path_thread_id_idx ON posts (thread_id, path);

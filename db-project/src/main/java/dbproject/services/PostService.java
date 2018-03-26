@@ -8,6 +8,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Array;
 import java.sql.SQLException;
@@ -31,7 +32,7 @@ public class PostService {
         this.userService = userService;
     }
 
-
+    @Transactional(rollbackFor = {DuplicateKeyException.class, DataAccessException.class})
     public List<PostModel> create(List<PostModel> posts, String slug_or_id) throws DuplicateKeyException {
 
         // !!! Разобраться с Connection

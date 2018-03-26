@@ -5,6 +5,16 @@ DROP TABLE IF EXISTS Posts CASCADE;
 DROP TABLE IF EXISTS Votes CASCADE ;
 CREATE EXTENSION IF NOT EXISTS CITEXT;
 
+DROP INDEX IF EXISTS forums_user_id_idx;
+DROP INDEX IF EXISTS threads_user_id_idx;
+DROP INDEX IF EXISTS threads_forums_id_idx;
+DROP INDEX IF EXISTS posts_forum_id_idx;
+DROP INDEX IF EXISTS posts_user_id_idx;
+DROP INDEX IF EXISTS posts_path_thread_id_idx;
+DROP INDEX IF EXISTS posts_threads_id_idx;
+
+SET LOCAL SYNCHRONOUS_COMMIT = OFF;
+
 CREATE TABLE IF NOT EXISTS Users (
   id SERIAL PRIMARY KEY,
   about TEXT DEFAULT NULL,
@@ -42,7 +52,8 @@ CREATE TABLE IF NOT EXISTS Posts (
   message TEXT,
   parent INTEGER DEFAULT 0,
   thread_id INTEGER REFERENCES Threads(id) ON DELETE CASCADE NOT NULL,
-  path INTEGER [] NOT NULL
+  path INTEGER [] NOT NULL,
+  root_id INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS Votes (
@@ -51,3 +62,13 @@ CREATE TABLE IF NOT EXISTS Votes (
   voice INTEGER DEFAULT 0,
   CONSTRAINT unique_pair UNIQUE (user_id, thread_id)
 );
+
+CREATE INDEX IF NOT EXISTS forums_user_id_idx ON Forums (user_id);
+CREATE INDEX IF NOT EXISTS threads_user_id_idx ON Threads (user_id);
+CREATE INDEX IF NOT EXISTS threads_forums_id_idx ON Threads (forum_id);
+
+CREATE INDEX IF NOT EXISTS posts_user_id_idx ON Posts (user_id);
+CREATE INDEX IF NOT EXISTS posts_forum_id_idx ON Posts (forum_id);
+CREATE INDEX IF NOT EXISTS posts_threads_id_idx ON Posts (thread_id);
+CREATE INDEX IF NOT EXISTS posts_path_idx ON Posts (path);
+CREATE INDEX IF NOT EXISTS posts_path_thread_id_idx ON posts (thread_id, path);

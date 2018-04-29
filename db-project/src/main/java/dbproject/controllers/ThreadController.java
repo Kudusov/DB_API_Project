@@ -30,7 +30,8 @@ public class ThreadController {
     public ResponseEntity createPosts(@RequestBody(required = false) List<PostModel> posts,
                                       @PathVariable("slug_or_id") String slug_or_id) {
         try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(postService.create(posts, slug_or_id));
+            postService.create(posts, slug_or_id);
+            return ResponseEntity.status(HttpStatus.CREATED).body(posts);
         } catch (DuplicateKeyException ex) {
            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
         } catch (DataAccessException ex) {

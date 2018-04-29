@@ -17,8 +17,7 @@ import java.util.NoSuchElementException;
 
 @RestController
 public class ForumController {
-    @NotNull
-    private ForumService forums;
+    private @NotNull ForumService forums;
     private ThreadService threads;
     public  ForumController(@NotNull ForumService forumService, @NotNull ThreadService threads) {
         this.forums = forumService;

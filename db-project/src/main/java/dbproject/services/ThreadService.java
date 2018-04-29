@@ -17,10 +17,12 @@ import static dbproject.rowmappers.RowMappers.readPost;
 public class ThreadService {
     private JdbcTemplate jdbcTemplate;
     private UserService userService;
+    private ForumService forumService;
 
-    public ThreadService(JdbcTemplate jdbcTemplate, UserService userService) {
+    public ThreadService(JdbcTemplate jdbcTemplate, UserService userService, ForumService forumService) {
         this.jdbcTemplate = jdbcTemplate;
         this.userService = userService;
+        this.forumService = forumService;
     }
 
     @SuppressWarnings("unused")
@@ -60,30 +62,36 @@ public class ThreadService {
 
         final StringBuilder sqlCreate = new StringBuilder();
         final List<Object> params = new ArrayList<>();
-
+        final Integer userId = userService.getUserIdByNickname(thread.getAuthor());
+        final Integer forumID = forumService.getForumIdBySlug(forumSlug);
         sqlCreate.append("INSERT INTO Threads (user_id, ");
-        params.add(thread.getAuthor());
+        params.add(userId);
 
         if (thread.getCreated() != null) {
             sqlCreate.append("created, ");
             params.add(thread.getCreated());
         }
 
-        sqlCreate.append("forum_id, slug, message, title) VALUES((SELECT id FROM Users WHERE nickname = ?), ");
+        sqlCreate.append("forum_id, slug, message, title) VALUES(?, ");
         if (thread.getCreated() != null) {
             sqlCreate.append("?, ");
         }
 
-        sqlCreate.append("(SELECT id FROM Forums WHERE slug = ?), ?, ?, ?) RETURNING id");
-        params.add(forumSlug);
+        sqlCreate.append("?, ?, ?, ?) RETURNING id");
+        params.add(forumID);
         params.add(thread.getSlug());
         params.add(thread.getMessage());
         params.add(thread.getTitle());
 
         final Integer id = jdbcTemplate.queryForObject(sqlCreate.toString(), Integer.class, params.toArray());
         updateThreadCount(forumSlug, 1);
+        updateForumUsers(userId, forumID);
         return getThreadById(id);
+    }
 
+    public void updateForumUsers(Integer userId, Integer forumId) {
+        final String sqlUpdateForumVisitors = "INSERT INTO forum_users (user_id, forum_id) VALUES (?, ?) ON CONFLICT (user_id, forum_id) DO NOTHING";
+        jdbcTemplate.update(sqlUpdateForumVisitors, userId, forumId);
     }
 
     public ThreadModel getThreadById(Integer id) {

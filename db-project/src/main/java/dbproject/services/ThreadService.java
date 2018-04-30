@@ -4,6 +4,7 @@ import dbproject.models.PostModel;
 import dbproject.models.ThreadModel;
 import dbproject.models.ThreadUpdateModel;
 import dbproject.models.VoteModel;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -97,7 +98,11 @@ public class ThreadService {
     public ThreadModel getThreadById(Integer id) {
         final String sqlGetThreadById = "SELECT *, (SELECT nickname FROM users WHERE threads.user_id = id) as author," +
                 " (SELECT slug FROM forums WHERE threads.forum_id = id) as forum FROM Threads where id = ?";
-        return  jdbcTemplate.queryForObject(sqlGetThreadById, readThread, id);
+        try {
+            return jdbcTemplate.queryForObject(sqlGetThreadById, readThread, id);
+        } catch (DataAccessException ex) {
+            return getThreadBySlug(id.toString());
+        }
     }
 
     public ThreadModel getThreadBySlug(String slug) {
@@ -112,6 +117,7 @@ public class ThreadService {
             return getThreadById(Integer.parseInt(slug_or_id));
         }
         return getThreadBySlug(slug_or_id);
+
     }
 
     public void updateThreadCount(String slug, Integer count) {

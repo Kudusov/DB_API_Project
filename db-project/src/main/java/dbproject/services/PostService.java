@@ -105,23 +105,26 @@ public class PostService {
     public void create(List<PostModel> posts, String slug_or_id) throws DuplicateKeyException {
         final String sqlCreate = "INSERT INTO Posts (id, user_id, created, forum_id, message, parent, thread_id, path, root_id)" +
                 " VALUES(?, ?, ?, ?, ?, ?, ?, array_append(?, ?::INTEGER), ?)";
-        final String sqlUpdateForumUsers = "INSERT INTO forum_users (user_id, forum_id) VALUES (?, ?) ON CONFLICT (user_id, forum_id) DO NOTHING";
-//        final String sqlAddCurrentIdToPath = "UPDATE Posts SET path = array_append(path, id) WHERE id = ?";
+
+        final String sqlUpdateForumUsers = "INSERT INTO forum_users (user_id, forum_id) VALUES (?, ?) ";
+
         final ThreadModel thread = threadService.getThreadBySlugOrID(slug_or_id);
 
         if (posts == null || posts.isEmpty()) {
             return;
-//            return new ArrayList<>();
         }
 
         final Integer forumId = threadService.getForumIdByThreadId(thread.getId());
         final String forumSlug = forumService.getForumSlugById(forumId);
         final String currentTime = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+        final List<Integer> userList = new ArrayList<>();
+        final List<Integer> forumList = new ArrayList<>();
 
-        try (Connection connection = jdbcTemplate.getDataSource().getConnection()) {
-            connection.setAutoCommit(false);
-            try (PreparedStatement preparedStatement = connection.prepareStatement(sqlCreate, Statement.NO_GENERATED_KEYS);
-                 PreparedStatement preparedStatementUpdateForumUsers = connection.prepareStatement(sqlUpdateForumUsers, Statement.NO_GENERATED_KEYS)) {
+        try (Connection connection1 = jdbcTemplate.getDataSource().getConnection()) {
+            connection1.setAutoCommit(false);
+//            connection2.setAutoCommit(false);
+            try (PreparedStatement preparedStatement = connection1.prepareStatement(sqlCreate, Statement.NO_GENERATED_KEYS)
+                 /*PreparedStatement preparedStatementUpdateForumUsers = connection1.prepareStatement(sqlUpdateForumUsers, Statement.NO_GENERATED_KEYS)*/) {
                 for (PostModel post : posts) {
                     final Integer id = getNextId();
                     final Integer userId = userService.getUserIdByNickname(post.getAuthor());
@@ -147,19 +150,21 @@ public class PostService {
 
                     final Array path = parentId == 0 ? null : jdbcTemplate.queryForObject("SELECT path FROM Posts  WHERE id = ?", Array.class, parentId);
 
-                    Integer root_id;
+                    Integer rootId;
                     try {
-                        root_id = parentId == 0 ? id : ((Integer[]) path.getArray())[0];
+                        rootId = parentId == 0 ? id : ((Integer[]) path.getArray())[0];
                     } catch (SQLException e) {
-                        root_id = id;
+                        rootId = id;
                     }
                     preparedStatement.setArray(8, path);
-                    preparedStatement.setInt(10, root_id);
+                    preparedStatement.setInt(10, rootId);
                     preparedStatement.addBatch();
 
-                    preparedStatementUpdateForumUsers.setInt(1, userId);
-                    preparedStatementUpdateForumUsers.setInt(2,forumId);
-                    preparedStatementUpdateForumUsers.addBatch();
+//                    preparedStatementUpdateForumUsers.setInt(1, userId);
+//                    preparedStatementUpdateForumUsers.setInt(2,forumId);
+                    userList.add(userId);
+                    forumList.add(forumId);
+//                    preparedStatementUpdateForumUsers.addBatch();
 
                     post.setId(id);
                     post.setCreated(currentTime);
@@ -170,19 +175,50 @@ public class PostService {
                 }
 
                 preparedStatement.executeBatch();
-                preparedStatementUpdateForumUsers.executeBatch();
-                connection.commit();
-                forumService.updatePostCount(forumId, posts.size());
+                //preparedStatementUpdateForumUsers.executeBatch();
+                connection1.commit();
+                //connection2.commit();
+                //forumService.updatePostCount(forumId, posts.size());
             } catch (SQLException ex) {
-                connection.rollback();
+                connection1.rollback();
+                //connection2.rollback();
+
                 throw new DataRetrievalFailureException(ex.getMessage());
             } finally {
-                connection.setAutoCommit(true);
+                connection1.setAutoCommit(true);
+                //connection2.setAutoCommit(true);
             }
-        return;
+
         } catch (SQLException ex) {
             throw new DataRetrievalFailureException(ex.getMessage());
         }
+
+        forumService.updatePostCount(forumId, posts.size());
+
+        try (Connection connection2  = jdbcTemplate.getDataSource().getConnection()) {
+            connection2.setAutoCommit(false);
+            try (PreparedStatement preparedStatement = connection2.prepareStatement(sqlUpdateForumUsers, Statement.NO_GENERATED_KEYS)) {
+                for (int i = 0; i < userList.size(); i++) {
+                    preparedStatement.setInt(1, userList.get(i));
+                    preparedStatement.setInt(2, forumList.get(i));
+                    preparedStatement.addBatch();
+                }
+                preparedStatement.executeBatch();
+                connection2.commit();
+            } catch (SQLException ex) {
+                System.out.println("Что то пошло не так");
+                connection2.rollback();
+                //connection2.rollback();
+
+                throw new DataRetrievalFailureException(ex.getMessage());
+            } finally {
+                connection2.setAutoCommit(true);
+                //connection2.setAutoCommit(true);
+            }
+        } catch (SQLException ex) {
+            throw new DataRetrievalFailureException(ex.getMessage());
+        }
+        return;
     }
 
     public Integer getParentId(Integer postId, Integer threadId) {

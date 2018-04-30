@@ -91,7 +91,7 @@ public class ThreadService {
     }
 
     public void updateForumUsers(Integer userId, Integer forumId) {
-        final String sqlUpdateForumVisitors = "INSERT INTO forum_users (user_id, forum_id) VALUES (?, ?) ON CONFLICT (user_id, forum_id) DO NOTHING";
+        final String sqlUpdateForumVisitors = "INSERT INTO forum_users (user_id, forum_id) VALUES (?, ?) ";
         jdbcTemplate.update(sqlUpdateForumVisitors, userId, forumId);
     }
 

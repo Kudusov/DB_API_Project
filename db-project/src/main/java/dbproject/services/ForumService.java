@@ -140,13 +140,46 @@ ORDER BY fullname
     }
 
     public List<ThreadModel> getThreads(String slug, String since, Boolean desc, Integer limit) {
+        final Integer forumId = getForumIdBySlug(slug);
         final StringBuilder sqlCreate = new StringBuilder();
         final List<Object> params = new ArrayList<>();
 
         sqlCreate.append("SELECT nickname as author, created, f.slug as forum, t.id, message, t.slug, t.title, votes " +
                 " FROM threads t JOIN forums f ON t.forum_id = f.id JOIN Users u ON t.user_id = u.id " +
-                " WHERE f.slug = ? ");
+                " WHERE f.id = ? ");
+        params.add(forumId);
+
+        if (since != null) {
+            if (Objects.equals(desc, Boolean.TRUE)) {
+                sqlCreate.append("and created <= ? ");
+            } else {
+                sqlCreate.append("and created >= ? ");
+            }
+            params.add(since);
+        }
+
+        sqlCreate.append("ORDER BY created ");
+
+        sqlCreate.append(Objects.equals(desc, Boolean.TRUE) ? " DESC " : "");
+
+        if (limit != null) {
+            sqlCreate.append("LIMIT ?");
+            params.add(limit);
+        }
+
+        return jdbcTemplate.query(sqlCreate.toString(), readThread, params.toArray());
+    }
+
+    public List<ThreadModel> getThreads2(String slug, String since, Boolean desc, Integer limit) {
+        final Integer forumId = getForumIdBySlug(slug);
+        final StringBuilder sqlCreate = new StringBuilder();
+        final List<Object> params = new ArrayList<>();
+
+        sqlCreate.append("SELECT nickname AS author, created, ? AS forum, t.id, message, t.slug, t.title, votes " +
+                " FROM threads t JOIN users u ON t.user_id = u.id WHERE t.forum_id = ? ");
+
         params.add(slug);
+        params.add(forumId);
 
         if (since != null) {
             if (Objects.equals(desc, Boolean.TRUE)) {

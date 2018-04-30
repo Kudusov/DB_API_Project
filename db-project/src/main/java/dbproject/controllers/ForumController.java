@@ -64,11 +64,7 @@ public class ForumController {
                                      @RequestParam(value = "since", required = false) String since) {
 
         try {
-            final List<?> result = forums.getThreads(slug, since, desc, limit);
-            if (result.isEmpty()) {
-                forums.getBySlug(slug);
-            }
-            return ResponseEntity.status(HttpStatus.OK).body(result);
+            return ResponseEntity.status(HttpStatus.OK).body(forums.getThreads(slug, since, desc, limit));
         } catch (DuplicateKeyException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorModel(ex.getMessage()));
         } catch (DataAccessException ex) {
